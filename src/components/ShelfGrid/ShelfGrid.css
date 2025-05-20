@@ -1,0 +1,355 @@
+.tray-cell {
+  flex: 0 0 calc((100% - (6 * var(--spacing-md))) / 6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 73px;
+}
+
+/* Khi shelf-item ở trạng thái EMPTY */
+.tray-cell .shelf-item.empty {
+  background-color: #ef4444;
+  color: white;
+  width: 100%;
+  height: 100%;
+  min-height: 55px;
+  min-width: 55px;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+/* Khi shelf-item ở trạng thái HIGH */
+.tray-cell .shelf-item.high {
+  background-color: #22c55e;
+  color: white;
+  width: 100%;
+  height: 100%;
+  min-height: 55px;
+  min-width: 55px;
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
+}
+
+/* Khi shelf-item ở trạng thái MEDIUM */
+.tray-cell .shelf-item.medium {
+  background-color: #f59e0b;
+  color: white;
+  width: 100%;
+  height: 100%;
+  min-height: 55px;
+  min-width: 55px;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+/* Hiệu ứng hover cho tất cả các trạng thái */
+.tray-cell .shelf-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.tier-row-group {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+  width: 100%;
+}
+
+.shelf-grid-container {
+  display: flex;
+  flex-direction: column; /* Sắp xếp các kệ từ trên xuống dưới */
+  gap: var(--spacing-xl);
+}
+
+.shelf-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+}
+
+.shelf-grid {
+  width: 100%; /* Đảm bảo mỗi kệ chiếm toàn bộ chiều ngang */
+  background-color: var(--background-white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+}
+
+.tier-row {
+  flex: 0 0 calc(50% - var(--spacing-xl)); /* 2 tầng trên 1 hàng ngang */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  width: 50%;
+  min-width: 260px;
+  transform-origin: center;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+}
+
+.tier-row.filtered-out {
+  opacity: 0.3;
+  transform: translateY(10px) scale(0.98);
+}
+
+.tier-row.filtered-in {
+  opacity: 1;
+  transform: translateY(-5px) scale(1.02);
+  z-index: 1;
+}
+
+.tier-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  padding-left: var(--spacing-md);
+  flex: 0 0 10%;
+  max-width: 10%;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.tray-container {
+  flex: 0 0 90%;
+  max-width: 90%;
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-md);
+  flex-wrap: wrap;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shelf-item {
+  aspect-ratio: 1;
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity, box-shadow;
+  position: relative;
+  overflow: visible;
+  font-weight: 600;
+  min-width: 60px;
+  min-height: 60px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.shelf-item.filtered-out {
+  opacity: 0.3;
+  transform: translateY(10px) scale(0.95);
+}
+
+.shelf-item.filtered-in {
+  opacity: 1;
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.shelf-item.filtered-in:hover {
+  z-index: 3;
+}
+
+/* Cải thiện hiệu ứng hover */
+.shelf-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+/* Hiệu ứng active khi click */
+.shelf-item:active {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Hiệu ứng focus cho accessibility */
+.shelf-item:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+
+/* Hiệu ứng ripple khi click */
+.shelf-item::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: inherit;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+}
+
+.shelf-item:active::after {
+  transform: translate(-50%, -50%) scale(2);
+  opacity: 0;
+  transition: 0s;
+}
+
+.shelf-item.high {
+  background-color: #22c55e; /* Xanh lá - kệ đầy */
+  color: white;
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
+}
+
+.shelf-item.medium {
+  background-color: #f59e0b; /* Vàng - kệ đang sử dụng một phần */
+  color: white;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.shelf-item.empty {
+  background-color: #ef4444; /* Đỏ - kệ trống */
+  color: white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.shelf-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Hiệu ứng gợn sóng khi click */
+.shelf-item::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.shelf-item:active::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.no-results {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+  font-size: var(--text-lg);
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-lg) 0;
+}
+
+/* Animation cho các item được lọc */
+@keyframes filterIn {
+  0% {
+    opacity: 0.3;
+    transform: translateY(10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.05);
+  }
+}
+
+@keyframes filterOut {
+  0% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.05);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateY(10px) scale(0.95);
+  }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0.3;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0.3;
+    transform: translateY(10px);
+  }
+}
+
+/* Styles cho kết quả phù hợp với bộ lọc */
+.tray-cell.matching-filter {
+  animation: fadeInUp 0.5s ease forwards;
+  z-index: 2;
+}
+
+.tray-cell.matching-filter .shelf-item {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  opacity: 1;
+  z-index: 2;
+}
+
+/* Styles cho kết quả không phù hợp với bộ lọc */
+.tray-cell.not-matching-filter {
+  animation: fadeOutDown 0.5s ease forwards;
+  z-index: 1;
+}
+
+.tray-cell.not-matching-filter .shelf-item {
+  transform: translateY(5px) scale(0.95);
+  opacity: 0.3;
+  filter: grayscale(50%);
+}
+
+/* Styles cho tier-row có kết quả phù hợp */
+.tier-row.has-matching-items {
+  animation: fadeInUp 0.5s ease forwards;
+  z-index: 2;
+}
+
+/* Styles cho tier-row không có kết quả phù hợp */
+.tier-row.no-matching-items {
+  animation: fadeOutDown 0.5s ease forwards;
+  z-index: 1;
+}
+
+/* Hiệu ứng hover cho các item */
+.tray-cell.matching-filter .shelf-item:hover {
+  transform: translateY(-8px) scale(1.08);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  z-index: 3;
+}
+
+.tray-cell.not-matching-filter .shelf-item:hover {
+  transform: translateY(0) scale(1);
+  opacity: 0.5;
+}

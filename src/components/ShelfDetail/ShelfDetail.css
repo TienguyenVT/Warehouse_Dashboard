@@ -1,0 +1,73 @@
+.shelf-detail {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 300px;
+  max-width: 90vw;
+}
+
+.shelf-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.shelf-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  color: #666;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-row .label {
+  font-weight: 500;
+  color: #666;
+}
+
+.detail-row .value {
+  color: #333;
+}
+
+.detail-row .value.status-high {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.detail-row .value.status-medium {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.detail-row .value.status-empty {
+  color: #ef4444;
+  font-weight: 600;
+}
