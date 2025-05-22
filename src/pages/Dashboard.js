@@ -90,7 +90,7 @@ const Dashboard = ({ user, onLogout }) => {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1 className="dashboard-title">Warehouse Dashboard</h1>
+        <h1 className="dashboard-title">Shelf Dashboard</h1>
         <div className="user-info">
           <span className="user-name">{user?.username || 'Admin'}</span>
           <button className="logout-button" onClick={onLogout}>
