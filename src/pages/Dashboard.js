@@ -161,43 +161,35 @@ const Dashboard = () => {
         return <div className="dashboard__error">Lỗi: {error}</div>;
     }
 
-    return (
-        <div className="dashboard">
-            <header className="dashboard__header">
-                <h1 className="dashboard__title">Quản lý kệ hàng</h1>
-                <div className="dashboard__user-info">
-                    <span className="dashboard__username">{user?.username || 'Admin'}</span>
-                    <button onClick={handleLogout} className="dashboard__logout-btn">
-                        Đăng xuất
-                    </button>
-                </div>
-            </header>
-
-            <div className="dashboard__filters">
-                <FilterPanel 
-                    tiers={[...new Set(shelves.map(s => s.tier))].sort((a, b) => Number(a) - Number(b))}
-                    statuses={Object.keys(STATUS_CONFIG)}
-                    filters={filters}
-                    onFilterChange={handleFilterChange}
-                    shelfStats={stats}
-                />
-            </div>
-            
-            <div className="dashboard__content">
-                <ShelfGrid 
-                    shelves={filteredShelves}
-                    onShelfClick={handleSelectShelf}
-                />
-            </div>
-            
-            {selectedShelf && (
-                <ShelfDetail 
-                    shelf={selectedShelf}
-                    onClose={() => setSelectedShelf(null)}
-                />
-            )}
+  return (
+    <div className="dashboard">
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">Warehouse Dashboard</h1>
+        <div className="user-info">
+          <span className="user-name">{user?.username || 'Admin'}</span>
+          <button className="logout-button" onClick={onLogout}>
+            Đăng xuất
+          </button>
         </div>
-    );
+      </div>      <FilterPanel 
+        tiers={[...new Set(shelves.map(s => s.tier))].sort()}        statuses={['HIGH', 'MEDIUM', 'EMPTY']}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+      />
+      
+      <ShelfGrid 
+        shelves={filteredShelves}
+        onShelfClick={setSelectedShelf}
+      />
+      
+      {selectedShelf && (
+        <ShelfDetail 
+          shelf={selectedShelf}
+          onClose={() => setSelectedShelf(null)}
+        />
+      )}
+    </div>
+  );
 };
 
 export default Dashboard;
