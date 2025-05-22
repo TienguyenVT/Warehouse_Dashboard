@@ -1,24 +1,24 @@
 // File: FilterPanel.js
 // Mô tả: Component React hiển thị và xử lý bộ lọc (filter) cho dashboard quản lý kho hàng.
-// Chức năng: Cho phép người dùng lọc dữ liệu kệ hàng theo tầng và trạng thái, đồng bộ với dashboard.
+// Chức năng: Cho phép người dùng lọc dữ liệu kệ hàng theo tầng và trạng thái.
 import React, { useMemo } from 'react';
 import './FilterPanel.css';
+
+// Mapping trạng thái với mô tả và màu sắc
+const STATUS_CONFIG = {
+  HIGH: { label: 'Kệ đầy', color: '#22c55e' },
+  MEDIUM: { label: 'Kệ còn trống một phần', color: '#f59e0b' },
+  EMPTY: { label: 'Kệ trống hoàn toàn', color: '#ef4444' },
+};
 
 const FilterPanel = ({
   onFilterChange,
   tiers = [],
-  statuses = ['HIGH', 'MEDIUM', 'EMPTY'],
+  statuses = Object.keys(STATUS_CONFIG),
   filters,
-  shelfStats
+  shelfStats = {}
 }) => {
-  // Mapping trạng thái với mô tả và màu sắc
-  const statusDescriptions = {
-    HIGH: { label: 'Kệ đầy', color: '#22c55e' },
-    MEDIUM: { label: 'Kệ còn trống một phần', color: '#f59e0b' },
-    EMPTY: { label: 'Kệ trống hoàn toàn', color: '#ef4444' },
-  };
-
-  // Sắp xếp danh sách tầng
+  // Sắp xếp danh sách tầng theo số
   const sortedTiers = useMemo(() => {
     return [...new Set(tiers)].sort((a, b) => Number(a) - Number(b));
   }, [tiers]);
@@ -32,7 +32,7 @@ const FilterPanel = ({
     onFilterChange(filterType, value, newFilters);
   };
 
-  // Reset tất cả bộ lọc
+  // Reset tất cả bộ lọc về giá trị mặc định
   const resetFilters = () => {
     const resetState = {
       tier: 'all',
@@ -41,17 +41,17 @@ const FilterPanel = ({
     onFilterChange('reset', null, resetState);
   };
 
-  // Tính tổng số lượng cho mỗi trạng thái
-  const totalItems = useMemo(() => {
-    return Object.values(shelfStats || {}).reduce((acc, curr) => acc + (curr || 0), 0);
+  // Tính tổng số lượng kệ
+  const totalShelfCount = useMemo(() => {
+    return Object.values(shelfStats).reduce((sum, count) => sum + (count || 0), 0);
   }, [shelfStats]);
 
   return (
     <div className="filter-panel">
-      <div className="filter-header">
+      <div className="filter-panel__header">
         <h3>Bộ lọc</h3>
         <button
-          className="reset-button"
+          className="filter-panel__reset-btn"
           onClick={resetFilters}
           disabled={filters.tier === 'all' && filters.status === 'all'}
           title="Đặt lại tất cả bộ lọc"
@@ -60,12 +60,13 @@ const FilterPanel = ({
         </button>
       </div>
 
-      <div className="filter-group">
-        <label htmlFor="tier-select">Chọn tầng:</label>
+      <div className="filter-panel__control">
+        <label htmlFor="tier-select">Tầng:</label>
         <select
           id="tier-select"
           value={filters.tier}
           onChange={(e) => handleFilterChange('tier', e.target.value)}
+          className="filter-panel__select"
         >
           <option value="all">Tất cả các tầng</option>
           {sortedTiers.map((tier) => (
@@ -76,28 +77,29 @@ const FilterPanel = ({
         </select>
       </div>
 
-      <div className="filter-group">
-        <label htmlFor="status-select">Trạng thái kệ:</label>
+      <div className="filter-panel__control">
+        <label htmlFor="status-select">Trạng thái:</label>
         <select
           id="status-select"
           value={filters.status}
           onChange={(e) => handleFilterChange('status', e.target.value)}
+          className={`filter-panel__select ${filters.status !== 'all' ? 'filter-panel__select--active' : ''}`}
           style={{
-            borderLeft: filters.status !== 'all' ? `4px solid ${statusDescriptions[filters.status]?.color}` : 'none'
+            borderLeft: filters.status !== 'all' ? `4px solid ${STATUS_CONFIG[filters.status]?.color}` : 'none'
           }}
         >
           <option value="all">Tất cả trạng thái</option>
           {statuses.map((status) => {
-            const count = shelfStats?.[status.toLowerCase()] || 0;
-            const percentage = totalItems > 0 ? Math.round((count / totalItems) * 100) : 0;
+            const count = shelfStats[status.toLowerCase()] || 0;
+            const percentage = totalShelfCount > 0 ? Math.round((count / totalShelfCount) * 100) : 0;
             
             return (
               <option 
                 key={status} 
                 value={status}
-                style={{ borderLeft: `4px solid ${statusDescriptions[status].color}` }}
+                style={{ borderLeft: `4px solid ${STATUS_CONFIG[status].color}` }}
               >
-                {statusDescriptions[status].label}
+                {STATUS_CONFIG[status].label}
                 {` (${count} - ${percentage}%)`}
               </option>
             );
@@ -105,40 +107,39 @@ const FilterPanel = ({
         </select>
       </div>
 
-      {/* Hiển thị các bộ lọc đang áp dụng */}
-      <div className="active-filters">
-        {(filters.tier !== 'all' || filters.status !== 'all') && (
-          <div className="filter-tags">
-            <span>Đang lọc theo: </span>
-            {filters.tier !== 'all' && (
-              <span className="filter-tag">
-                Tầng {filters.tier}
-                <button 
-                  onClick={() => handleFilterChange('tier', 'all')} 
-                  aria-label="Xóa bộ lọc tầng"
-                  title="Xóa bộ lọc tầng"
-                >×</button>
-              </span>
-            )}
-            {filters.status !== 'all' && (
-              <span 
-                className="filter-tag"
-                style={{ 
-                  borderLeft: `4px solid ${statusDescriptions[filters.status].color}`,
-                  paddingLeft: '8px'
-                }}
-              >
-                {statusDescriptions[filters.status].label}
-                <button 
-                  onClick={() => handleFilterChange('status', 'all')} 
-                  aria-label="Xóa bộ lọc trạng thái"
-                  title="Xóa bộ lọc trạng thái"
-                >×</button>
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Active filters display */}
+      {(filters.tier !== 'all' || filters.status !== 'all') && (
+        <div className="filter-panel__active-filters">
+          <span className="filter-panel__active-label">Đang lọc theo: </span>
+          {filters.tier !== 'all' && (
+            <span className="filter-panel__tag">
+              Tầng {filters.tier}
+              <button 
+                onClick={() => handleFilterChange('tier', 'all')} 
+                aria-label="Xóa bộ lọc tầng"
+                className="filter-panel__tag-remove"
+              >×</button>
+            </span>
+          )}
+          
+          {filters.status !== 'all' && (
+            <span 
+              className="filter-panel__tag"
+              style={{ 
+                borderLeft: `4px solid ${STATUS_CONFIG[filters.status].color}`,
+                paddingLeft: '8px'
+              }}
+            >
+              {STATUS_CONFIG[filters.status].label}
+              <button 
+                onClick={() => handleFilterChange('status', 'all')} 
+                aria-label="Xóa bộ lọc trạng thái"
+                className="filter-panel__tag-remove"
+              >×</button>
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

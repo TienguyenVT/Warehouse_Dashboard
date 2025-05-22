@@ -1,58 +1,75 @@
 // File: ShelfDetail.js
-// Mô tả: Component React hiển thị chi tiết thông tin một kệ hàng trong dashboard quản lý kho.
-// Chức năng: Hiển thị thông tin tầng, khay, trạng thái, sức chứa và thời gian cập nhật của kệ hàng, cho phép đóng popup chi tiết.
+// Mô tả: Component hiển thị chi tiết thông tin một kệ hàng
 import React from 'react';
 import './ShelfDetail.css';
 
 const ShelfDetail = ({ shelf, onClose }) => {
     if (!shelf) return null;
 
-    const percentageFilled = ((shelf.itemCount || 0) / (shelf.capacity || 1)) * 100;
+    // Tính toán phần trăm sức chứa đã sử dụng
+    const percentageFilled = shelf.capacity 
+        ? ((shelf.itemCount || 0) / shelf.capacity) * 100 
+        : 0;
     
-    // Đảm bảo tier là số nguyên
-    const displayTier = typeof shelf.tier === 'string' ? parseInt(shelf.tier) : shelf.tier;
+    // Chuyển dạng tầng sang số nguyên nếu là string
+    const displayTier = parseInt(shelf.tier, 10);
+    
+    // Format thời gian cập nhật nếu có
+    const formatLastUpdated = shelf.lastUpdated 
+        ? new Date(shelf.lastUpdated).toLocaleString() 
+        : 'Chưa cập nhật';
 
     return (
         <div className="shelf-detail" role="dialog" aria-labelledby="shelf-detail-title">
-            <div className="shelf-detail-header">
+            <div className="shelf-detail__header">
                 <h3 id="shelf-detail-title">Chi tiết kệ hàng</h3>
                 <button 
                     onClick={onClose} 
-                    className="close-button"
+                    className="shelf-detail__close-btn"
                     aria-label="Đóng chi tiết"
-                >&times;</button>
+                >
+                    &times;
+                </button>
             </div>
-            <div className="shelf-detail-content">
-                <div className="detail-row">
-                    <span className="label">Tầng:</span>
-                    <span className="value">{displayTier}</span>
+            
+            <div className="shelf-detail__content">
+                <div className="shelf-detail__row">
+                    <span className="shelf-detail__label">Kệ:</span>
+                    <span className="shelf-detail__value">{shelf.shelf || '-'}</span>
                 </div>
-                <div className="detail-row">
-                    <span className="label">Khay:</span>
-                    <span className="value">{shelf.tray}</span>
+                
+                <div className="shelf-detail__row">
+                    <span className="shelf-detail__label">Tầng:</span>
+                    <span className="shelf-detail__value">{displayTier || '-'}</span>
                 </div>
-                <div className="detail-row">
-                    <span className="label">Số lượng:</span>
-                    <span className="value">{shelf.itemCount || 0} / {shelf.capacity || 0} ({percentageFilled.toFixed(1)}%)</span>
+                
+                <div className="shelf-detail__row">
+                    <span className="shelf-detail__label">Khay:</span>
+                    <span className="shelf-detail__value">{shelf.tray || '-'}</span>
                 </div>
-                <div className="detail-row">
-                    <span className="label">Trạng thái:</span>
-                    <span className={`value status-${(shelf.status || '').toLowerCase()}`}>
-                        {shelf.status || ''}
-                    </span>
-                </div>
-                {shelf.lastUpdated && (
-                    <div className="detail-row">
-                        <span className="label">Cập nhật lần cuối:</span>
-                        <span className="value">{new Date(shelf.lastUpdated).toLocaleString()}</span>
+                
+                {(shelf.itemCount !== undefined && shelf.capacity !== undefined) && (
+                    <div className="shelf-detail__row">
+                        <span className="shelf-detail__label">Số lượng:</span>
+                        <span className="shelf-detail__value">
+                            {shelf.itemCount} / {shelf.capacity} ({percentageFilled.toFixed(1)}%)
+                        </span>
                     </div>
                 )}
-                {shelf.capacity !== undefined && (
-                    <div className="detail-row">
-                        <span className="label">Sức chứa:</span>
-                        <span className="value">{shelf.capacity}</span>
+                
+                {shelf.status && (
+                    <div className="shelf-detail__row">
+                        <span className="shelf-detail__label">Trạng thái:</span>
+                        <span className={`shelf-detail__value shelf-detail__status shelf-detail__status--${(shelf.status || '').toLowerCase()}`}>
+                            {shelf.status}
+                        </span>
                     </div>
                 )}
+                
+                <div className="shelf-detail__row">
+                    <span className="shelf-detail__label">Cập nhật:</span>
+                    <span className="shelf-detail__value shelf-detail__timestamp">{formatLastUpdated}</span>
+                </div>
             </div>
         </div>
     );

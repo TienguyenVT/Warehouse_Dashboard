@@ -6,208 +6,135 @@ import './ShelfGrid.css';
 import ShelfItem from './ShelfItem';
 import ShelfDetail from '../ShelfDetail/ShelfDetail';
 import StatusBar from '../StatusBar/StatusBar';
-import FilterPanel from '../FilterPanel/FilterPanel';
 
-const ShelfGrid = ({ shelves, onShelfClick }) => {
-  const NUM_SHELVES = 4; // Số lượng kệ đồ
-  const NUM_TIERS_PER_SHELF = 4; // Số tầng mỗi kệ
-  const NUM_TRAYS_PER_TIER = 6; // Số ô mỗi tầng
-
+const ShelfGrid = ({ shelves = [], onShelfClick }) => {
   const [selectedShelf, setSelectedShelf] = useState(null);
   const [stats, setStats] = useState({ high: 0, medium: 0, empty: 0 });
   const [lastUpdated, setLastUpdated] = useState(new Date().toISOString());
-  const [shelvesData, setShelvesData] = useState([]);
-  const [filters, setFilters] = useState({
-    tier: 'all',
-    status: 'all'
-  });
-
-  // Hàm tính toán trạng thái dựa trên số lượng vật phẩm và sức chứa
-  const calculateStatus = (itemCount, capacity) => {
-    const percentage = (itemCount / capacity) * 100;
-    if (percentage >= 80) return 'HIGH';
-    if (percentage >= 15) return 'MEDIUM';
-    if (percentage >=0) return 'EMPTY';
-  };
-
-  // Lấy danh sách tất cả các tầng có trong dữ liệu
-  const getAllTiers = () => {
-    // Tạo mảng từ 1 đến NUM_TIERS_PER_SHELF
-    return Array.from({ length: NUM_TIERS_PER_SHELF }, (_, index) => index + 1);
-  };
-
-  // Khởi tạo dữ liệu ban đầu và thiết lập interval cập nhật
-  useEffect(() => {
-    // Tạo dữ liệu mẫu ban đầu
-    const initialData = Array.from({ length: NUM_SHELVES }, (_, shelfIndex) => {
-      const tiers = Array.from({ length: NUM_TIERS_PER_SHELF / 2 }, (_, groupIndex) => {
-        const groupedTiers = [
-          { 
-            tier: groupIndex * 2 + 1, 
-            trays: Array.from({ length: NUM_TRAYS_PER_TIER }, (_, trayIndex) => {
-              const capacity = 100;
-              const itemCount = Math.floor(Math.random() * (capacity + 1));
-              return {
-                tray: trayIndex + 1,
-                status: calculateStatus(itemCount, capacity),
-                capacity,
-                itemCount,
-                lastUpdated: new Date().toISOString()
-              };
-            })
-          },
-          { 
-            tier: groupIndex * 2 + 2, 
-            trays: Array.from({ length: NUM_TRAYS_PER_TIER }, (_, trayIndex) => {
-              const capacity = 100;
-              const itemCount = Math.floor(Math.random() * (capacity + 1));
-              return {
-                tray: trayIndex + 1,
-                status: calculateStatus(itemCount, capacity),
-                capacity,
-                itemCount,
-                lastUpdated: new Date().toISOString()
-              };
-            })
-          }
-        ];
-        return groupedTiers;
+  
+  // Tổ chức dữ liệu kệ từ mảng phẳng thành cấu trúc phân cấp kệ -> tầng -> khay
+  const organizedShelves = React.useMemo(() => {
+    // Nhóm theo kệ và tầng
+    const shelfMap = {};
+    
+    // Khởi tạo cấu trúc dữ liệu
+    shelves.forEach(item => {
+      const shelfNumber = item.shelf || 1;
+      const tier = item.tier;
+      
+      // Khởi tạo kệ nếu chưa tồn tại
+      if (!shelfMap[shelfNumber]) {
+        shelfMap[shelfNumber] = { shelf: shelfNumber, tiers: {} };
+      }
+      
+      // Khởi tạo tầng nếu chưa tồn tại
+      if (!shelfMap[shelfNumber].tiers[tier]) {
+        shelfMap[shelfNumber].tiers[tier] = {
+          tier,
+          trays: []
+        };
+      }
+      
+      // Thêm khay vào tầng tương ứng
+      shelfMap[shelfNumber].tiers[tier].trays.push({
+        tray: item.tray,
+        status: item.status,
+        capacity: item.capacity,
+        itemCount: item.itemCount,
+        lastUpdated: item.lastUpdated
       });
-      return { shelf: shelfIndex + 1, tiers };
     });
+    
+    // Chuyển đổi map thành mảng
+    const result = Object.values(shelfMap).map(shelf => {
+      return {
+        ...shelf,
+        tiers: Object.values(shelf.tiers).sort((a, b) => a.tier - b.tier)
+      };
+    }).sort((a, b) => a.shelf - b.shelf);
+    
+    return result;
+  }, [shelves]);
 
-    setShelvesData(initialData);
-
-    // Thiết lập interval để cập nhật ngẫu nhiên
-    const interval = setInterval(() => {
-      setShelvesData(prevData => {
-        const newData = JSON.parse(JSON.stringify(prevData));
-        
-        // Chọn ngẫu nhiên một ô để cập nhật
-        const randomShelf = Math.floor(Math.random() * NUM_SHELVES);
-        const randomTierGroup = Math.floor(Math.random() * (NUM_TIERS_PER_SHELF / 2));
-        const randomTierInGroup = Math.floor(Math.random() * 2);
-        const randomTray = Math.floor(Math.random() * NUM_TRAYS_PER_TIER);
-        
-        // Cập nhật thông tin của ô được chọn
-        const tray = newData[randomShelf].tiers[randomTierGroup][randomTierInGroup].trays[randomTray];
-        const newItemCount = Math.floor(Math.random() * (tray.capacity + 1));
-        tray.itemCount = newItemCount;
-        tray.status = calculateStatus(newItemCount, tray.capacity);
-        tray.lastUpdated = new Date().toISOString();
-        
-        return newData;
-      });
-      setLastUpdated(new Date().toISOString());
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Tính toán thống kê mỗi khi dữ liệu thay đổi
+  // Cập nhật thống kê khi dữ liệu thay đổi
   useEffect(() => {
     const newStats = { high: 0, medium: 0, empty: 0 };
+    let latestUpdate = new Date(0);
     
-    shelvesData.forEach(shelf => {
-      shelf.tiers.forEach(group => {
-        group.forEach(tier => {
-          tier.trays.forEach(tray => {
-            newStats[tray.status.toLowerCase()]++;
-          });
-        });
-      });
+    shelves.forEach(item => {
+      const status = item.status?.toLowerCase() || 'empty';
+      if (newStats[status] !== undefined) {
+        newStats[status]++;
+      }
+      
+      // Tìm thời gian cập nhật gần nhất
+      if (item.lastUpdated) {
+        const updateTime = new Date(item.lastUpdated);
+        if (updateTime > latestUpdate) {
+          latestUpdate = updateTime;
+          setLastUpdated(item.lastUpdated);
+        }
+      }
     });
     
     setStats(newStats);
-  }, [shelvesData]);
+  }, [shelves]);
 
-  const handleTrayClick = (shelfIndex, tierInfo, trayIndex) => {
-    // Thêm check để tránh click vào khu vực không hợp lệ
-    if (!tierInfo || !tierInfo.trays || !tierInfo.trays[trayIndex]) {
-      return;
-    }
-  
-    const tray = tierInfo.trays[trayIndex];
+  const handleShelfSelect = (shelf, tier, tray) => {
+    const selectedItem = shelves.find(
+      item => item.shelf === shelf && item.tier === tier && item.tray === tray
+    );
     
-    setSelectedShelf({
-      shelf: shelfIndex + 1,
-      tier: tierInfo.tier,
-      tray: tray.tray,
-      status: tray.status,
-      capacity: tray.capacity,
-      itemCount: tray.itemCount,
-      lastUpdated: tray.lastUpdated
-    });
-  };
-
-  // Hàm kiểm tra một ô có phù hợp với bộ lọc hay không
-  const isItemMatchingFilters = (tierNumber, status) => {
-    const tierMatch = filters.tier === 'all' || Number(filters.tier) === tierNumber;
-    const statusMatch = filters.status === 'all' || filters.status === status;
-    return tierMatch && statusMatch;
-  };
-
-  // Hàm kiểm tra một hàng (tier) có bất kỳ ô nào phù hợp với bộ lọc không
-  const hasTierMatchingItems = (tier) => {
-    return tier.trays.some(tray => isItemMatchingFilters(tier.tier, tray.status));
-  };
-
-  // Xử lý thay đổi bộ lọc
-  const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }));
+    if (selectedItem) {
+      setSelectedShelf(selectedItem);
+      if (onShelfClick) {
+        onShelfClick(selectedItem);
+      }
+    }
   };
 
   const handleCloseDetail = () => {
     setSelectedShelf(null);
   };
 
+  // Nếu không có dữ liệu
+  if (!shelves.length) {
+    return <div className="shelf-grid__empty">Không có dữ liệu kệ hàng</div>;
+  }
+
   return (
-    <div className="shelf-grid-wrapper">
+    <div className="shelf-grid__wrapper">
       <StatusBar stats={stats} lastUpdated={lastUpdated} />
-      <div className="shelf-grid-container">
-        {shelvesData.map((shelf, shelfIndex) => (
-          <div key={`shelf-${shelf.shelf}`} className="shelf-grid">
-            <h3>Kệ {shelf.shelf}</h3>
-            {shelf.tiers.map((group, groupIndex) => (
-              <div key={`tier-group-${groupIndex}`} className="tier-row-group">
-                {group.map((tier) => {
-                  const hasMatchingItems = hasTierMatchingItems(tier);
-                  return (
-                    <div 
-                      key={`tier-${tier.tier}`} 
-                      className={`tier-row ${hasMatchingItems ? 'has-matching-items' : 'no-matching-items'}`}
-                    >
-                      <div className="tier-label">Tầng {tier.tier}</div>
-                      <div className="tray-container">
-                        {tier.trays.map((tray, trayIndex) => {
-                          const isMatching = isItemMatchingFilters(tier.tier, tray.status);
-                          return (
-                            <div 
-                              key={`tray-${tier.tier}-${tray.tray}`} 
-                              className={`tray-cell ${isMatching ? 'matching-filter' : 'not-matching-filter'}`}
-                            >
-                              <ShelfItem
-                                tier={tier.tier}
-                                tray={tray.tray}
-                                status={tray.status}
-                                onClick={() => handleTrayClick(shelfIndex, tier, trayIndex)}
-                                isFiltered={isMatching}
-                              />
-                            </div>
-                          );
-                        })}
+      
+      <div className="shelf-grid__container">
+        {organizedShelves.map(shelf => (
+          <div key={`shelf-${shelf.shelf}`} className="shelf-grid__section">
+            <h3 className="shelf-grid__title">Kệ {shelf.shelf}</h3>
+            
+            <div className="shelf-grid__tiers">
+              {shelf.tiers.map(tier => (
+                <div key={`tier-${shelf.shelf}-${tier.tier}`} className="shelf-grid__tier">
+                  <div className="shelf-grid__tier-label">Tầng {tier.tier}</div>
+                  
+                  <div className="shelf-grid__trays">
+                    {tier.trays.map(tray => (
+                      <div key={`tray-${shelf.shelf}-${tier.tier}-${tray.tray}`} className="shelf-grid__tray">
+                        <ShelfItem
+                          tier={tier.tier}
+                          tray={tray.tray}
+                          status={tray.status}
+                          onClick={() => handleShelfSelect(shelf.shelf, tier.tier, tray.tray)}
+                        />
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
+      
       {selectedShelf && (
         <ShelfDetail
           shelf={selectedShelf}

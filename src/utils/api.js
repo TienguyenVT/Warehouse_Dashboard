@@ -1,4 +1,3 @@
-
 // MOCK DATA & API ONLY - KHÔNG GỌI BACKEND NỮA
 
 // Giả lập danh sách người dùng
@@ -42,8 +41,8 @@ const auth = {
 function generateShelves() {
   const shelves = [];
   for (let shelfNum = 1; shelfNum <= 5; shelfNum++) { // 5 kệ hàng
-    for (let tier = 1; tier <= 3; tier++) {
-      for (let tray = 1; tray <= 5; tray++) {
+    for (let tier = 1; tier <= 4; tier++) { // Tăng từ 3 lên 4 tầng
+      for (let tray = 1; tray <= 6; tray++) { // Tăng từ 5 lên 6 ô
         const capacity = Math.floor(Math.random() * 101);
         let status;
         if (capacity >= 80) status = 'HIGH';
@@ -55,6 +54,7 @@ function generateShelves() {
           tray,
           status,
           capacity,
+          itemCount: capacity, // Thêm itemCount để hiển thị trong ShelfDetail
           lastUpdated: new Date().toISOString()
         });
       }

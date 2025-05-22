@@ -1,73 +1,118 @@
+/* ShelfDetail.css - Styles cho component chi tiết kệ hàng */
+
 .shelf-detail {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
-  min-width: 300px;
+  min-width: 320px;
   max-width: 90vw;
+  animation: fadeIn 0.3s ease;
 }
 
-.shelf-detail-header {
+.shelf-detail__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--spacing-md);
 }
 
-.shelf-detail-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.shelf-detail__header h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--text-primary);
 }
 
-.close-button {
+.shelf-detail__close-btn {
   background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
   padding: 0;
-  color: #666;
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
 }
 
-.close-button:hover {
-  color: #333;
+.shelf-detail__close-btn:hover {
+  background-color: var(--background-light);
+  color: var(--text-primary);
 }
 
-.detail-row {
+.shelf-detail__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.shelf-detail__row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border-color-light);
 }
 
-.detail-row .label {
+.shelf-detail__label {
   font-weight: 500;
-  color: #666;
+  color: var(--text-secondary);
+  flex: 0 0 35%;
 }
 
-.detail-row .value {
-  color: #333;
+.shelf-detail__value {
+  color: var(--text-primary);
+  font-weight: 400;
+  flex: 0 0 65%;
+  text-align: right;
 }
 
-.detail-row .value.status-high {
+/* Trạng thái */
+.shelf-detail__status {
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.shelf-detail__status--high {
   color: #22c55e;
-  font-weight: 600;
+  background-color: rgba(34, 197, 94, 0.1);
 }
 
-.detail-row .value.status-medium {
+.shelf-detail__status--medium {
   color: #f59e0b;
-  font-weight: 600;
+  background-color: rgba(245, 158, 11, 0.1);
 }
 
-.detail-row .value.status-empty {
+.shelf-detail__status--empty {
   color: #ef4444;
-  font-weight: 600;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.shelf-detail__timestamp {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }

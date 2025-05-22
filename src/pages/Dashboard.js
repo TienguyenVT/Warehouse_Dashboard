@@ -1,121 +1,203 @@
 // File: Dashboard.js
-// Mô tả: Component React chính hiển thị dashboard quản lý kho hàng.
-// Chức năng: Quản lý trạng thái, lọc, thống kê, hiển thị lưới kệ, chi tiết kệ, và đồng bộ dữ liệu mock cho toàn bộ hệ thống.
-import React, { useState, useEffect } from 'react';
+// Mô tả: Component chính hiển thị dashboard quản lý kho hàng
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { subscribeToShelfUpdates } from '../utils/mqtt';
+import { shelf as shelfAPI } from '../utils/api';
 import './Dashboard.css';
 import ShelfGrid from '../components/ShelfGrid/ShelfGrid';
 import FilterPanel from '../components/FilterPanel/FilterPanel';
 import ShelfDetail from '../components/ShelfDetail/ShelfDetail';
-import { shelf } from '../utils/api';
 
-const Dashboard = ({ user, onLogout }) => {
-  const [shelves, setShelves] = useState([]);
-  const [filteredShelves, setFilteredShelves] = useState([]);
-  const [selectedShelf, setSelectedShelf] = useState(null);  const [filters, setFilters] = useState({ tier: 'all', status: 'all' });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Mapping trạng thái với mô tả và màu sắc
+const STATUS_CONFIG = {
+    HIGH: { label: 'Kệ đầy', color: '#22c55e' },
+    MEDIUM: { label: 'Kệ còn trống một phần', color: '#f59e0b' },
+    EMPTY: { label: 'Kệ trống hoàn toàn', color: '#ef4444' },
+};
 
-  // Loại bỏ hàm calculateStats vì không cần thiết nữa
+const Dashboard = () => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [shelves, setShelves] = useState([]); // Danh sách kệ thô, chưa lọc
+    const [filteredShelves, setFilteredShelves] = useState([]); // Danh sách kệ đã lọc
+    const [selectedShelf, setSelectedShelf] = useState(null);
+    const [filters, setFilters] = useState({ tier: 'all', status: 'all' });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [stats, setStats] = useState({ high: 0, medium: 0, empty: 0 }); // Thống kê trạng thái kệ
+    const isMounted = useRef(true);
+    const currentFilters = useRef(filters); // Lưu trữ bộ lọc hiện tại để sử dụng trong callback
 
+    // Luôn cập nhật currentFilters khi filters thay đổi
+    useEffect(() => {
+        currentFilters.current = filters;
+    }, [filters]);
 
-  // Áp dụng bộ lọc, an toàn với dữ liệu thiếu
-  const applyFilters = (shelfList, currentFilters) => {
-    return (Array.isArray(shelfList) ? shelfList : []).filter(shelf => {
-      const tierMatch = currentFilters.tier === 'all' || String(shelf.tier) === String(currentFilters.tier);
-      const statusMatch = currentFilters.status === 'all' || (shelf.status && shelf.status === currentFilters.status);
-      return tierMatch && statusMatch;
-    });
-  };
+    // Hàm lọc dữ liệu dựa trên bộ lọc hiện tại
+    const filterShelves = useCallback((data, filterSettings) => {
+        let filtered = [...data];
+        
+        // Lọc theo tầng (tier)
+        if (filterSettings.tier !== 'all') {
+            filtered = filtered.filter(
+                shelf => String(shelf.tier) === String(filterSettings.tier)
+            );
+        }
 
-  // Load dữ liệu ban đầu
-  useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const data = await shelf.fetchAll();
-        if (!isMounted) return;        setShelves(data);
-        const filtered = applyFilters(data, filters);
-        setFilteredShelves(filtered);
-      } catch (err) {
-        if (isMounted) setError(err.message);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    loadData();
-    return () => { isMounted = false; };
-  }, [filters]);
+        // Lọc theo trạng thái (status)
+        if (filterSettings.status !== 'all') {
+            filtered = filtered.filter(
+                shelf => shelf.status === filterSettings.status
+            );
+        }
+        
+        return filtered;
+    }, []);
 
-
-  // Subscribe to shelf updates (mock)
-  useEffect(() => {
-    let unsub = null;
-    const subscribe = async () => {
-      unsub = await shelf.subscribeToUpdates((update) => {
-        setShelves(prevShelves => {
-          const newShelves = prevShelves.map(s =>
-            s.tier === update.tier && s.tray === update.tray
-              ? { ...s, ...update }
-              : s          );
-          const filtered = applyFilters(newShelves, filters);
-          setFilteredShelves(filtered);
-          return newShelves;
+    // Cập nhật thống kê từ dữ liệu shelves
+    const updateStats = useCallback((data) => {
+        const newStats = { high: 0, medium: 0, empty: 0 };
+        
+        data.forEach(shelf => {
+            const status = shelf.status?.toLowerCase() || 'empty';
+            if (newStats[status] !== undefined) {
+                newStats[status]++;
+            }
         });
-      });
+        
+        return newStats;
+    }, []);
+
+    // useEffect chính cho việc khởi tạo, tải dữ liệu, và MQTT subscription
+    useEffect(() => {
+        isMounted.current = true;
+
+        // Tải dữ liệu kệ ban đầu
+        const fetchInitialShelves = async () => {
+            try {
+                const data = await shelfAPI.fetchAll();
+                if (isMounted.current) {
+                    setShelves(data);
+                    // Áp dụng bộ lọc cho dữ liệu ban đầu
+                    setFilteredShelves(filterShelves(data, filters));
+                    // Cập nhật thống kê
+                    setStats(updateStats(data));
+                    setLoading(false);
+                }
+            } catch (err) {
+                if (isMounted.current) {
+                    setError(err.message);
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchInitialShelves();
+
+        // Đăng ký nhận cập nhật MQTT cho kệ hàng
+        const unsubscribeFromMQTT = subscribeToShelfUpdates((update) => {
+            if (isMounted.current) {
+                // Cập nhật shelves
+                setShelves(prevShelves => {
+                    const newShelves = prevShelves.map(s =>
+                        s.tier === update.tier && s.tray === update.tray && s.shelf === update.shelf
+                            ? { ...s, ...update }
+                            : s
+                    );
+                    
+                    // Áp dụng bộ lọc hiện tại cho dữ liệu mới cập nhật
+                    const currentFilteredShelves = filterShelves(newShelves, currentFilters.current);
+                    setFilteredShelves(currentFilteredShelves);
+                    
+                    // Cập nhật thống kê
+                    setStats(updateStats(newShelves));
+                    
+                    return newShelves;
+                });
+            }
+        });
+
+        return () => {
+            isMounted.current = false;
+            if (unsubscribeFromMQTT) {
+                unsubscribeFromMQTT();
+            }
+        };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // useEffect riêng cho việc áp dụng bộ lọc khi filters thay đổi
+    useEffect(() => {
+        if (loading) return; // Nếu đang tải dữ liệu ban đầu, chưa cần lọc
+        
+        const filteredData = filterShelves(shelves, filters);
+        setFilteredShelves(filteredData);
+    }, [filters, loading]); // Loại bỏ shelves từ dependency để tránh gọi lại khi cập nhật từ MQTT
+    
+    // Xử lý thay đổi bộ lọc từ FilterPanel
+    const handleFilterChange = (filterType, value, newFiltersFromPanel) => {
+        setFilters(newFiltersFromPanel);
     };
-    subscribe();
-    return () => { if (unsub) unsub(); };
-  }, [filters]);
 
+    // Xử lý đăng xuất
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
 
-  // Xử lý thay đổi bộ lọc
-  const handleFilterChange = (type, value, newFilters) => {
-    // newFilters có thể được truyền từ FilterPanel, nếu không thì tự tạo
-    const nextFilters = newFilters || { ...filters, [type]: value };
-    setFilters(nextFilters);
-    const filtered = applyFilters(shelves, nextFilters);
-    setFilteredShelves(filtered);
-  };
+    // Xử lý chọn kệ
+    const handleSelectShelf = (shelf) => {
+        setSelectedShelf(shelf);
+    };
 
+    // Loading state
+    if (loading) {
+        return <div className="dashboard__loading">Đang tải dữ liệu...</div>;
+    }
 
-  if (loading) {
-    return <div className="loading" role="status">Đang tải dữ liệu...</div>;
-  }
+    // Error state
+    if (error) {
+        return <div className="dashboard__error">Lỗi: {error}</div>;
+    }
 
-  if (error) {
-    return <div className="error" role="alert">Lỗi: {error}</div>;
-  }
+    return (
+        <div className="dashboard">
+            <header className="dashboard__header">
+                <h1 className="dashboard__title">Quản lý kệ hàng</h1>
+                <div className="dashboard__user-info">
+                    <span className="dashboard__username">{user?.username || 'Admin'}</span>
+                    <button onClick={handleLogout} className="dashboard__logout-btn">
+                        Đăng xuất
+                    </button>
+                </div>
+            </header>
 
-  return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">Warehouse Dashboard</h1>
-        <div className="user-info">
-          <span className="user-name">{user?.username || 'Admin'}</span>
-          <button className="logout-button" onClick={onLogout}>
-            Đăng xuất
-          </button>
+            <div className="dashboard__filters">
+                <FilterPanel 
+                    tiers={[...new Set(shelves.map(s => s.tier))].sort((a, b) => Number(a) - Number(b))}
+                    statuses={Object.keys(STATUS_CONFIG)}
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    shelfStats={stats}
+                />
+            </div>
+            
+            <div className="dashboard__content">
+                <ShelfGrid 
+                    shelves={filteredShelves}
+                    onShelfClick={handleSelectShelf}
+                />
+            </div>
+            
+            {selectedShelf && (
+                <ShelfDetail 
+                    shelf={selectedShelf}
+                    onClose={() => setSelectedShelf(null)}
+                />
+            )}
         </div>
-      </div>      <FilterPanel 
-        tiers={[...new Set(shelves.map(s => s.tier))].sort()}        statuses={['HIGH', 'MEDIUM', 'EMPTY']}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-      />
-      
-      <ShelfGrid 
-        shelves={filteredShelves}
-        onShelfClick={setSelectedShelf}
-      />
-      
-      {selectedShelf && (
-        <ShelfDetail 
-          shelf={selectedShelf}
-          onClose={() => setSelectedShelf(null)}
-        />
-      )}
-    </div>
-  );
+    );
 };
 
 export default Dashboard;

@@ -1,33 +1,27 @@
 // File: ShelfItem.js
-// Mô tả: Component React hiển thị một kệ hàng đơn lẻ trong lưới kệ của dashboard quản lý kho.
-// Chức năng: Hiển thị trạng thái, vị trí kệ, màu sắc và cho phép chọn để xem chi tiết.
+// Mô tả: Component hiển thị một ô kệ hàng đơn lẻ trong lưới kệ hàng
 import React from 'react';
 import './ShelfGrid.css';
 
-const ShelfItem = ({ tier, tray, status, onClick, isFiltered }) => {
-  // Đảm bảo status luôn là chuỗi hợp lệ và chữ thường
-  const safeStatus = (status || 'empty').toLowerCase();
+// Status config mapping
+const STATUS_DISPLAY = {
+  high: { label: 'Kệ chứa nhiều', colorClass: 'shelf-item--high' },
+  medium: { label: 'Kệ chứa vừa phải', colorClass: 'shelf-item--medium' },
+  empty: { label: 'Kệ trống', colorClass: 'shelf-item--empty' }
+};
 
-  // Tooltip chi tiết hơn
-  const statusLabels = {
-    high: 'Kệ chứa nhiều',
-    medium: 'Kệ chứa vừa phải',
-    empty: 'Kệ trống'
-  };
-
-  // Thêm class dựa trên trạng thái lọc
-  const filterClass = isFiltered !== undefined 
-    ? (isFiltered ? 'filtered-in' : 'filtered-out')
-    : '';
-
-  // Thêm hàm xử lý sự kiện riêng để đảm bảo click hoạt động
+const ShelfItem = ({ tier, tray, status = 'empty', onClick, capacity, itemCount }) => {
+  // Normalize status để đảm bảo luôn là chữ thường và hợp lệ
+  const normalizedStatus = (status || 'empty').toLowerCase();
+  const statusInfo = STATUS_DISPLAY[normalizedStatus] || STATUS_DISPLAY.empty;
+  
+  // Xử lý click event
   const handleClick = (e) => {
     e.preventDefault();
-    e.stopPropagation();
     if (onClick) onClick();
   };
-
-  // Thêm hàm xử lý phím để đảm bảo accessibility
+  
+  // Accessibility - hỗ trợ điều hướng bàn phím
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -35,18 +29,21 @@ const ShelfItem = ({ tier, tray, status, onClick, isFiltered }) => {
     }
   };
 
+  const capacityInfo = capacity && itemCount !== undefined 
+    ? ` | ${itemCount}/${capacity}` 
+    : '';
+
   return (
     <div
-      className={`shelf-item ${safeStatus} ${filterClass}`}
+      className={`shelf-item ${statusInfo.colorClass}`}
       onClick={handleClick}
       onKeyPress={handleKeyPress}
-      title={`Tầng ${tier} - Khay ${tray} | ${statusLabels[safeStatus]}`}
+      title={`Tầng ${tier} - Khay ${tray} | ${statusInfo.label}${capacityInfo}`}
       tabIndex={0}
       role="button"
-      aria-label={`Kệ tầng ${tier} khay ${tray} trạng thái ${statusLabels[safeStatus]}`}
-      style={{ cursor: onClick ? 'pointer' : 'default' }}
+      aria-label={`Kệ tầng ${tier} khay ${tray}, ${statusInfo.label}`}
     >
-      <span className="shelf-label">{tier}-{tray}</span>
+      <span className="shelf-item__label">{tier}-{tray}</span>
     </div>
   );
 };
