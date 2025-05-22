@@ -178,7 +178,7 @@ const createMockUpdates = (callback) => {
         
         console.log(`Mock update: Kệ ${shelf}, Tầng ${tier}, Ô ${tray} -> ${status}`);
         callback(mockUpdate);
-    }, 1000); // Giảm xuống 5 giây để thấy kết quả nhanh hơn
+    }, 1000); 
 
     return () => {
         if (mockInterval) {
@@ -222,11 +222,9 @@ const initializeMQTTClient = async () => {
 
 // Subscribe để nhận cập nhật kệ hàng
 const subscribeToShelfUpdates = (callback) => {
-    // Trong môi trường development hoặc khi không có MQTT, sử dụng mock
-    if (process.env.NODE_ENV === 'development' || true) {
-        console.log('Using mock MQTT updates for development');
-        return createMockUpdates(callback);
-    }
+    // Luôn sử dụng mock vì chúng ta đang ở môi trường development
+    console.log('Using mock MQTT updates for development');
+    return createMockUpdates(callback);
 
     // Trong production, sử dụng MQTT thật
     if (!client) {

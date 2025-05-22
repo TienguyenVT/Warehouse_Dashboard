@@ -167,7 +167,7 @@ const Dashboard = () => {
         <h1 className="dashboard-title">Warehouse Dashboard</h1>
         <div className="user-info">
           <span className="user-name">{user?.username || 'Admin'}</span>
-          <button className="logout-button" onClick={onLogout}>
+          <button className="logout-button" onClick={handleLogout}>
             Đăng xuất
           </button>
         </div>
